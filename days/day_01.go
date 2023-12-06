@@ -1,7 +1,6 @@
 package days
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"unicode"
@@ -45,7 +44,7 @@ func lastDigit(input string) string {
 	return "0"
 }
 
-func Day1() {
+func Day1() string {
 	lines := helpers.Read("input/day1.txt")
 
 	sum := 0
@@ -56,8 +55,7 @@ func Day1() {
 		pair, _ := strconv.Atoi(first + last)
 
 		sum += pair
-		log.Println(line, first, last)
 	}
 
-	log.Println(sum)
+	return strconv.Itoa(sum)
 }

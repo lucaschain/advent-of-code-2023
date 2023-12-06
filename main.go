@@ -1,7 +1,18 @@
 package main
 
-import "github.com/lucaschain/advent-of-code/days"
+import (
+	"fmt"
+
+	"github.com/lucaschain/advent-of-code/days"
+)
 
 func main() {
-	days.Day2()
+	exercises := []func() string{
+		days.Day1,
+		days.Day2,
+	}
+
+	for day, exercise := range exercises {
+		fmt.Printf("DAY %d: %s\n", day+1, exercise())
+	}
 }

@@ -116,7 +116,7 @@ func minimumPossibleSubset(subsets []CubeSubset) CubeSubset {
 	return minimalSubset
 }
 
-func Day2() {
+func Day2() string {
 	lines := helpers.Read("input/day2.txt")
 
 	idSum := 0
@@ -137,11 +137,8 @@ func Day2() {
 
 		if gamePossible {
 			idSum += gameId
-			fmt.Println(line, gameId)
-			fmt.Println(gameSubsets, gamePossible)
 		}
 	}
 
-	fmt.Println("Sum of possible Ids:", idSum)
-	fmt.Println("Sum of minimal powers:", minimumSubsetPowerSum)
+	return fmt.Sprintf("Possible ID sum: %d. Sum of minimal powers: %d", idSum, minimumSubsetPowerSum)
 }
