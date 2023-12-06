@@ -8,13 +8,38 @@ import (
 	"github.com/lucaschain/advent-of-code/helpers"
 )
 
+type Collision struct {
+	Symbol rune
+}
+
+type CollisionMap map[string]Collision
+
 type NumberPartStatus struct {
-	Number string
-	IsPart bool
+	Number     string
+	Id         int
+	Collisions map[string]Collision
+}
+
+func (n NumberPartStatus) AddCollisions(b CollisionMap) CollisionMap {
+	var collisions CollisionMap
+	if n.Collisions == nil {
+		collisions = make(CollisionMap)
+	} else {
+		collisions = n.Collisions
+	}
+	for key, value := range b {
+		collisions[key] = value
+	}
+
+	return collisions
+}
+
+func (n NumberPartStatus) IsPart() bool {
+	return len(n.Collisions) > 0
 }
 
 func (n NumberPartStatus) String() string {
-	return fmt.Sprintf("Number: %s, IsPart: %t", n.Number, n.IsPart)
+	return fmt.Sprintf("Number: %s, IsPart: %t, Collisions: %d", n.Number, n.IsPart(), len(n.Collisions))
 }
 
 func isDigit(char rune) bool {
@@ -45,21 +70,27 @@ func isSymbol(char rune) bool {
 	return true
 }
 
-func isPart(x int, y int, lines []string) bool {
+func checkCollisions(x int, y int, lines []string) CollisionMap {
 	dirs := [][]int{
 		{-1, -1}, {0, -1}, {1, -1},
 		{-1, 0}, {1, 0},
 		{-1, 1}, {0, 1}, {1, 1},
 	}
 
+	collisions := make(CollisionMap)
 	for _, dir := range dirs {
-		char := get(x+dir[0], y+dir[1], lines)
+		targetX := x + dir[0]
+		targetY := y + dir[1]
+		char := get(targetX, targetY, lines)
 		if isSymbol(char) {
-			return true
+			collisionKey := fmt.Sprintf("%d.%d", targetX, targetY)
+			collisions[collisionKey] = Collision{
+				Symbol: char,
+			}
 		}
 	}
 
-	return false
+	return collisions
 }
 
 func Day3() string {
@@ -67,44 +98,49 @@ func Day3() string {
 
 	var numberStatuses []NumberPartStatus
 	var currentNumberStatus NumberPartStatus
-	var engines map[int]map[int]int
+	currentId := 0
 
 	for y, line := range lines {
 		for x, char := range line {
 			if isDigit(char) {
 				currentNumberStatus.Number += string(char)
-				currentNumberStatus.IsPart = currentNumberStatus.IsPart || isPart(x, y, lines)
-
-				if currentNumberStatus.IsPart && char == '*' {
-					engines[x][y] += 1
-				}
+				currentNumberStatus.Collisions = currentNumberStatus.AddCollisions(checkCollisions(x, y, lines))
 			} else {
 				if currentNumberStatus.Number != "" {
 					numberStatuses = append(numberStatuses, currentNumberStatus)
 					currentNumberStatus = NumberPartStatus{}
+					currentNumberStatus.Id = currentId
+					currentId += 1
 				}
 			}
 		}
 	}
 
 	var partNumberSum int
+	engines := make(map[string][]int)
 	for _, numberStatus := range numberStatuses {
-		if numberStatus.IsPart {
+		if numberStatus.IsPart() {
 			intNumber, err := strconv.Atoi(numberStatus.Number)
 			if err != nil {
 				log.Fatal("Error converting string to int")
 			}
 
 			partNumberSum += intNumber
+
+			for collisionKey, collision := range numberStatus.Collisions {
+				fmt.Println(collisionKey, collision)
+				if collision.Symbol == '*' {
+					engines[collisionKey] = append(engines[collisionKey], intNumber)
+				}
+			}
 		}
 	}
 
 	var engineWithPairsSum int
-	for i, engine := range engines {
-		for j, pair := range engine {
-			if pair == 2 {
-				engineWithPairsSum += i * j
-			}
+
+	for _, engine := range engines {
+		if len(engine) == 2 {
+			engineWithPairsSum += engine[0] * engine[1]
 		}
 	}
 
