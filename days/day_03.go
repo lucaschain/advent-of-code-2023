@@ -128,7 +128,6 @@ func Day3() string {
 			partNumberSum += intNumber
 
 			for collisionKey, collision := range numberStatus.Collisions {
-				fmt.Println(collisionKey, collision)
 				if collision.Symbol == '*' {
 					engines[collisionKey] = append(engines[collisionKey], intNumber)
 				}
