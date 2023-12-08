@@ -13,6 +13,7 @@ func main() {
 		days.Day3,
 		days.Day4,
 		days.Day5,
+		days.Day6,
 	}
 
 	for day, exercise := range exercises {
