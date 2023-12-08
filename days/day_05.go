@@ -2,7 +2,6 @@ package days
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -54,17 +53,13 @@ func extractSeeds(line string, seedCallback func(int)) {
 }
 
 func isMapStart(line string) (string, string) {
-	re := regexp.MustCompile(`(?P<From>[a-z]+)-to-(?P<To>[a-z]+) map:`)
-	if !strings.Contains(line, "map:") {
-		return "", ""
-	}
+	matches := helpers.ExtractInfo(`(?P<From>[a-z]+)-to-(?P<To>[a-z]+) map:`, line)
 
-	matches := re.FindStringSubmatch(line)
 	if len(matches) == 0 {
 		return "", ""
 	}
 
-	return matches[1], matches[2]
+	return matches["From"], matches["To"]
 }
 
 func startNewMap(from string, to string) Map {
