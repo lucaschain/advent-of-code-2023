@@ -65,6 +65,7 @@ func processLine(line string) int {
 }
 
 func Day4() string {
+	return ""
 	lines := helpers.Read("input/day4.txt")
 
 	var uniqueCardPointSum int

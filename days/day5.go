@@ -115,6 +115,7 @@ func followSeed(seed int, maps map[string]Map) int {
 }
 
 func Day5() string {
+	return ""
 	lines := helpers.Read("input/day5.txt")
 
 	maps := make(map[string]Map)
