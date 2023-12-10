@@ -9,19 +9,17 @@ import (
 
 type Node struct {
 	Name     string
-	Children map[byte]string
-}
-
-func (n Node) IsStart() bool {
-	return n.Name[len(n.Name)-1] == 'A'
-}
-
-func (n Node) IsEnd() bool {
-	return n.Name[len(n.Name)-1] == 'Z'
+	Children []string
+	IsStart  bool
+	IsEnd    bool
 }
 
 func (n Node) Next(key byte) string {
-	return n.Children[key]
+	if key == 'L' {
+		return n.Children[0]
+	} else {
+		return n.Children[1]
+	}
 }
 
 type MapNodes map[string]Node
@@ -29,23 +27,20 @@ type MapNodes map[string]Node
 func nodeFromLine(line string) Node {
 	extracted := helpers.ExtractInfo(`(?P<Name>[A-Z]{3}) = \((?P<L>[A-Z]{3}), (?P<R>[A-Z]{3})\)`, line)
 
+	nodeName := extracted["Name"]
+	lastChar := nodeName[len(nodeName)-1]
 	node := Node{
-		Children: make(map[byte]string),
+		Children: []string{extracted["L"], extracted["R"]},
+		Name:     nodeName,
+		IsStart:  (lastChar == 'A'),
+		IsEnd:    (lastChar == 'Z'),
 	}
-	for property := range extracted {
-		if property == "Name" {
-			node.Name = extracted[property]
-		} else {
-			node.Children[property[0]] = extracted[property]
-		}
-	}
-
 	return node
 }
 
 func areAllEndingNodes(nodes MapNodes) bool {
 	for _, node := range nodes {
-		if !node.IsEnd() {
+		if !node.IsEnd {
 			return false
 		}
 	}
@@ -58,8 +53,16 @@ func Day8() string {
 	timeStart := time.Now()
 
 	instructions := lines[0]
-
-	fmt.Println("Instructions:", instructions)
+	intInstructions := []int{}
+	for _, instruction := range instructions {
+		if instruction == 'L' {
+			intInstructions = append(intInstructions, 0)
+		} else if instruction == 'R' {
+			intInstructions = append(intInstructions, 1)
+		} else {
+			panic("Invalid instruction")
+		}
+	}
 
 	nodes := MapNodes{}
 	startingNodes := MapNodes{}
@@ -67,7 +70,7 @@ func Day8() string {
 		node := nodeFromLine(line)
 		nodes[node.Name] = node
 
-		if node.IsStart() {
+		if node.IsStart {
 			startingNodes[node.Name] = node
 		}
 	}
@@ -78,11 +81,10 @@ func Day8() string {
 	currentNodes := startingNodes
 	instructionsLen := len(instructions)
 	for {
-		instruction := instructions[steps%instructionsLen]
-		if areAllEndingNodes(currentNodes) {
-			break
+		if steps%1000000 == 0 {
+			fmt.Println("Steps:", steps)
 		}
-
+		instruction := instructions[steps%instructionsLen]
 		nextNodes := MapNodes{}
 		for _, node := range currentNodes {
 			nextNode := node.Next(instruction)
@@ -90,6 +92,9 @@ func Day8() string {
 		}
 		currentNodes = nextNodes
 
+		if areAllEndingNodes(currentNodes) {
+			break
+		}
 		steps++
 	}
 

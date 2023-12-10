@@ -205,7 +205,6 @@ func Day7() string {
 
 	totalWinnings := 0
 	for i, hand := range hands {
-		println(hand.Cards, i+1, hand.CombinationPower(), hand.HandPower())
 		rank := i + 1
 		totalWinnings += hand.Bid * rank
 	}
