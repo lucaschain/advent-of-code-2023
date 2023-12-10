@@ -2,6 +2,7 @@ package days
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/lucaschain/advent-of-code/helpers"
@@ -10,19 +11,20 @@ import (
 type Node struct {
 	Name     string
 	Children []string
+	Left     *Node
+	Right    *Node
 	IsStart  bool
 	IsEnd    bool
 }
 
-func (n Node) Next(key byte) string {
+func (n Node) Next(key byte) *Node {
 	if key == 'L' {
-		return n.Children[0]
-	} else {
-		return n.Children[1]
+		return n.Left
 	}
+	return n.Right
 }
 
-type MapNodes map[string]Node
+type MapNodes map[string]*Node
 
 func nodeFromLine(line string) Node {
 	extracted := helpers.ExtractInfo(`(?P<Name>[A-Z]{3}) = \((?P<L>[A-Z]{3}), (?P<R>[A-Z]{3})\)`, line)
@@ -30,15 +32,15 @@ func nodeFromLine(line string) Node {
 	nodeName := extracted["Name"]
 	lastChar := nodeName[len(nodeName)-1]
 	node := Node{
-		Children: []string{extracted["L"], extracted["R"]},
 		Name:     nodeName,
 		IsStart:  (lastChar == 'A'),
 		IsEnd:    (lastChar == 'Z'),
+		Children: []string{extracted["L"], extracted["R"]},
 	}
 	return node
 }
 
-func areAllEndingNodes(nodes MapNodes) bool {
+func areAllEndingNodes(nodes []*Node) bool {
 	for _, node := range nodes {
 		if !node.IsEnd {
 			return false
@@ -65,30 +67,53 @@ func Day8() string {
 	}
 
 	nodes := MapNodes{}
-	startingNodes := MapNodes{}
+	startingNodes := []*Node{}
 	for _, line := range lines[2:] {
 		node := nodeFromLine(line)
-		nodes[node.Name] = node
+		nodes[node.Name] = &node
 
 		if node.IsStart {
-			startingNodes[node.Name] = node
+			startingNodes = append(startingNodes, &node)
 		}
 	}
 
-	fmt.Println("Starting Nodes:", startingNodes)
+	for _, node := range nodes {
+		leftNode, rightNode := nodes[node.Children[0]], nodes[node.Children[1]]
+		node.Left = leftNode
+		node.Right = rightNode
+	}
 
 	var steps int
 	currentNodes := startingNodes
 	instructionsLen := len(instructions)
 	for {
-		if steps%1000000 == 0 {
-			fmt.Println("Steps:", steps)
+		if steps%10000000 == 0 {
+			stepMilestone := math.Pow(10, 12)
+			sinceStart := time.Since(timeStart)
+			timePassed := time.Duration(steps + 1)
+			stepsPerMinute := float64(timePassed) / sinceStart.Minutes()
+			timeToFinishInHours := (stepMilestone / stepsPerMinute) / 60
+			fmt.Printf(
+				`
+
+Step %d
+  Time Spent %s
+  Estimate to 14 digits: %f hours`,
+				steps,
+				sinceStart,
+				timeToFinishInHours,
+			)
 		}
 		instruction := instructions[steps%instructionsLen]
-		nextNodes := MapNodes{}
+		nextNodes := []*Node{}
 		for _, node := range currentNodes {
-			nextNode := node.Next(instruction)
-			nextNodes[nextNode] = nodes[nextNode]
+			next := node.Next(instruction)
+
+			if next == nil {
+				panic(fmt.Sprintf("Node %s has no next node", node.Name))
+			}
+
+			nextNodes = append(nextNodes, next)
 		}
 		currentNodes = nextNodes
 
