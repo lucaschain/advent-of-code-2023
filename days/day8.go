@@ -2,8 +2,6 @@ package days
 
 import (
 	"fmt"
-	"math"
-	"time"
 
 	"github.com/lucaschain/advent-of-code/helpers"
 )
@@ -52,7 +50,6 @@ func areAllEndingNodes(nodes []*Node) bool {
 
 func Day8() string {
 	lines := helpers.Read("input/day8.txt")
-	timeStart := time.Now()
 
 	instructions := lines[0]
 	intInstructions := []int{}
@@ -83,46 +80,32 @@ func Day8() string {
 		node.Right = rightNode
 	}
 
+	stepsForEachGhost := []int{}
+	for _, node := range startingNodes {
+		stepsForEachGhost = append(stepsForEachGhost, processNode(node, instructions))
+	}
+	result := helpers.LcmSlice(stepsForEachGhost)
+
+	return fmt.Sprintf("Steps: %d", result)
+}
+
+func processNode(startingNode *Node, instructions string) int {
 	var steps int
-	currentNodes := startingNodes
+	currentNode := startingNode
 	instructionsLen := len(instructions)
 	for {
-		if steps%10000000 == 0 {
-			stepMilestone := math.Pow(10, 12)
-			sinceStart := time.Since(timeStart)
-			timePassed := time.Duration(steps + 1)
-			stepsPerMinute := float64(timePassed) / sinceStart.Minutes()
-			timeToFinishInHours := (stepMilestone / stepsPerMinute) / 60
-			fmt.Printf(
-				`
-
-Step %d
-  Time Spent %s
-  Estimate to 14 digits: %f hours`,
-				steps,
-				sinceStart,
-				timeToFinishInHours,
-			)
-		}
 		instruction := instructions[steps%instructionsLen]
-		nextNodes := []*Node{}
-		for _, node := range currentNodes {
-			next := node.Next(instruction)
+		next := currentNode.Next(instruction)
 
-			if next == nil {
-				panic(fmt.Sprintf("Node %s has no next node", node.Name))
-			}
-
-			nextNodes = append(nextNodes, next)
+		if next == nil {
+			panic(fmt.Sprintf("Node %s has no next node", currentNode.Name))
 		}
-		currentNodes = nextNodes
 
-		if areAllEndingNodes(currentNodes) {
-			break
-		}
+		currentNode = next
+
 		steps++
+		if currentNode.IsEnd {
+			return steps
+		}
 	}
-
-	fmt.Println("Time spent:", time.Since(timeStart))
-	return fmt.Sprintf("Steps: %d", steps)
 }
