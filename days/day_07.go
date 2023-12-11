@@ -18,23 +18,6 @@ var powerTable = map[string]int{
 	"A": 14,
 }
 
-func sliceEqual(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	slices.Sort(a)
-	slices.Sort(b)
-
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func isFiveOfAKind(cardCount []int, jokerCount int) bool {
 	if jokerCount == 5 {
 		return true
@@ -59,19 +42,19 @@ func isFourOfAKind(cardCount []int, jokerCount int) bool {
 
 func isFullHouse(cardCount []int, jokerCount int) bool {
 	fullHouseSet := []int{3, 2}
-	if sliceEqual(cardCount, fullHouseSet) {
+	if helpers.SliceEqual(cardCount, fullHouseSet) {
 		return true
 	}
 
 	if jokerCount == 1 {
-		if sliceEqual(cardCount, []int{3, 1}) {
+		if helpers.SliceEqual(cardCount, []int{3, 1}) {
 			return true
 		}
-		if sliceEqual(cardCount, []int{2, 2}) {
+		if helpers.SliceEqual(cardCount, []int{2, 2}) {
 			return true
 		}
 	} else if jokerCount == 2 {
-		if sliceEqual(cardCount, []int{2, 1}) {
+		if helpers.SliceEqual(cardCount, []int{2, 1}) {
 			return true
 		}
 	}
@@ -90,13 +73,13 @@ func isThreeOfAKind(cardCount []int, jokerCount int) bool {
 
 func isTwoPair(cardCount []int, jokerCount int) bool {
 	if jokerCount == 1 {
-		if sliceEqual(cardCount, []int{2, 1}) {
+		if helpers.SliceEqual(cardCount, []int{2, 1}) {
 			return true
 		}
-		return sliceEqual(cardCount, []int{2, 2})
+		return helpers.SliceEqual(cardCount, []int{2, 2})
 	}
 
-	return sliceEqual(cardCount, []int{2, 2, 1})
+	return helpers.SliceEqual(cardCount, []int{2, 2, 1})
 }
 
 func isPair(cardCount []int, jokerCount int) bool {
