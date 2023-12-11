@@ -47,14 +47,6 @@ func isDigit(char rune) bool {
 	return err == nil
 }
 
-func get(x int, y int, lines []string) rune {
-	if y >= 0 && x >= 0 && y < len(lines) && x < len(lines[y]) {
-		return rune(lines[y][x])
-	}
-
-	return 0
-}
-
 func isSymbol(char rune) bool {
 	if char == 0 {
 		return false
@@ -81,7 +73,7 @@ func checkCollisions(x int, y int, lines []string) CollisionMap {
 	for _, dir := range dirs {
 		targetX := x + dir[0]
 		targetY := y + dir[1]
-		char := get(targetX, targetY, lines)
+		char := helpers.GetFromGrid(targetX, targetY, lines)
 		if isSymbol(char) {
 			collisionKey := fmt.Sprintf("%d.%d", targetX, targetY)
 			collisions[collisionKey] = Collision{
