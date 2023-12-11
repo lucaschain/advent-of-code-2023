@@ -2,6 +2,7 @@ package days
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/lucaschain/advent-of-code/helpers"
 )
@@ -22,6 +23,15 @@ var connectionMap = RuneConnectionMap{
 	'7': {ConnectionDown, ConnectionLeft},
 	'.': {},
 	'S': {ConnectionUp, ConnectionRight, ConnectionDown, ConnectionLeft},
+}
+
+var improvedSymbols = map[rune]rune{
+	'F': '┌',
+	'7': '┐',
+	'J': '┘',
+	'L': '└',
+	'|': '│',
+	'-': '─',
 }
 
 type Point struct {
@@ -90,7 +100,7 @@ func getStartingPoint(lines []string) Point {
 	panic("Starting point not found")
 }
 
-func getSurroundingConnections(tile *Tile, lines []string) []*Tile {
+func getSurroundingConnections(tile *Tile, lines []string) []Point {
 	directions := []Point{
 		ConnectionUp,
 		ConnectionRight,
@@ -98,14 +108,14 @@ func getSurroundingConnections(tile *Tile, lines []string) []*Tile {
 		ConnectionLeft,
 	}
 
-	connections := []*Tile{}
+	connections := []Point{}
 	for _, dir := range directions {
 		otherPosition := tile.Position.Add(dir)
 		other := helpers.GetFromGrid(otherPosition.X, otherPosition.Y, lines)
 		otherTile := Tile{Position: otherPosition, TileType: other}
 
 		if tile.ConnectsTo(otherTile) {
-			connections = append(connections, &otherTile)
+			connections = append(connections, dir)
 		}
 	}
 
@@ -128,6 +138,65 @@ func getSurroundingConnections(tile *Tile, lines []string) []*Tile {
 	return connections
 }
 
+func getSurroundingTiles(tile *Tile, lines []string) []*Tile {
+	connections := getSurroundingConnections(tile, lines)
+
+	var tiles []*Tile
+	for _, connection := range connections {
+		otherPosition := tile.Position.Add(connection)
+		other := helpers.GetFromGrid(otherPosition.X, otherPosition.Y, lines)
+		otherTile := Tile{Position: otherPosition, TileType: other}
+		tiles = append(tiles, &otherTile)
+	}
+
+	return tiles
+}
+
+type LoopMap map[int]map[int]rune
+
+func replaceSWithPipe(startingTile *Tile, lines []string) rune {
+	connectionPositions := getSurroundingConnections(startingTile, lines)
+
+	comparator := func(a, b Point) bool {
+		return a == b
+	}
+	sorter := func(a, b Point) int {
+		if a.Y != b.Y {
+			return a.Y - b.Y
+		}
+		return a.X - b.X
+	}
+
+	for rune, conn := range connectionMap {
+		isSameDirections := helpers.SliceAnyEqual(
+			conn,
+			connectionPositions,
+			sorter,
+			comparator,
+		)
+		if isSameDirections {
+			return rune
+		}
+	}
+
+	return 0
+}
+
+func addToLoopMap(loopMap LoopMap, tile *Tile, lines []string) LoopMap {
+	x := tile.Position.X
+	y := tile.Position.Y
+	if _, ok := loopMap[x]; !ok {
+		loopMap[x] = make(map[int]rune)
+	}
+
+	if tile.TileType == 'S' {
+		tile.TileType = replaceSWithPipe(tile, lines)
+	}
+	loopMap[x][y] = tile.TileType
+
+	return loopMap
+}
+
 func Day10() string {
 	lines := helpers.Read("input/day10.txt")
 
@@ -136,7 +205,7 @@ func Day10() string {
 		Position: startingPoint,
 		TileType: 'S',
 	}
-	startingTile.Connections = getSurroundingConnections(startingTile, lines)
+	startingTile.Connections = getSurroundingTiles(startingTile, lines)
 
 	if len(startingTile.Connections) != 2 {
 		panic("Starting point needs to have exactly 2 connections")
@@ -147,21 +216,21 @@ func Day10() string {
 	currentB := startingTile.Connections[1]
 	previousA := startingTile
 	previousB := startingTile
+	loopMap := make(LoopMap)
+	loopMap = addToLoopMap(loopMap, startingTile, lines)
 	for {
-		if currentA.ConnectsTo(*currentB) || currentA == currentB {
-			return "Found a connection"
-		}
-		currentA.Connections = getSurroundingConnections(currentA, lines)
-		currentB.Connections = getSurroundingConnections(currentB, lines)
+		loopMap = addToLoopMap(loopMap, currentA, lines)
+		loopMap = addToLoopMap(loopMap, currentB, lines)
+		currentA.Connections = getSurroundingTiles(currentA, lines)
+		currentB.Connections = getSurroundingTiles(currentB, lines)
 		steps++
 
 		nextA := currentA.FindNext(previousA)
 		nextB := currentB.FindNext(previousB)
-		fmt.Printf("A: %s -> %s\n", currentA.String(), nextA.String())
-		fmt.Printf("B: %s -> %s\n", currentB.String(), nextB.String())
 
 		if nextA.Is(nextB) {
-			return fmt.Sprintf("Farthest point after %d steps", steps)
+			loopMap = addToLoopMap(loopMap, nextA, lines)
+			break
 		}
 
 		previousA = currentA
@@ -169,6 +238,23 @@ func Day10() string {
 
 		currentA = nextA
 		currentB = nextB
-
 	}
+
+	insideCount := 0
+	for y, line := range lines {
+		isOutside := true
+		for x := range line {
+			if char, ok := loopMap[x][y]; !ok {
+				if !isOutside {
+					insideCount++
+				}
+			} else {
+				if slices.Contains([]rune{'F', '7', '|'}, char) {
+					isOutside = !isOutside
+				}
+			}
+		}
+	}
+
+	return fmt.Sprintf("Farthest point after %d steps. %d points inside", steps, insideCount)
 }
