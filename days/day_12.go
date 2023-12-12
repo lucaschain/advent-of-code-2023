@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"regexp"
 	"strings"
 
 	"github.com/lucaschain/advent-of-code/helpers"
@@ -18,23 +17,6 @@ func countUnknownSprings(line string) int {
 		}
 	}
 	return count
-}
-
-func groupPatternToRegex(groupSizes []int) *regexp.Regexp {
-	pattern := ""
-	for i, size := range groupSizes {
-		if i == 0 {
-			pattern += fmt.Sprintf(`^\.*#{%d}`, size)
-			continue
-		}
-
-		pattern += fmt.Sprintf(`\.+#{%d}`, size)
-
-		if i == len(groupSizes)-1 {
-			pattern += `\.*$`
-		}
-	}
-	return regexp.MustCompile(pattern)
 }
 
 func fillInPattern(pattern string, base2Pattern string) string {
@@ -76,6 +58,27 @@ func expandPattern(pattern string) []string {
 	return expanded
 }
 
+func matchesGroupSizes(pattern string, groupSizes []int) bool {
+	currentGroup := 0
+	currentGroupIndex := 0
+	for _, c := range pattern {
+		if c != '.' {
+			currentGroup++
+
+			if currentGroup == 1 {
+				currentGroupIndex++
+			}
+		} else {
+			if currentGroup > 0 {
+				if currentGroup != groupSizes[currentGroupIndex-1] {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
 func extractLine(line string) (string, []int) {
 	parts := strings.Split(line, " ")
 	pattern := parts[0]
@@ -88,14 +91,29 @@ func extractLine(line string) (string, []int) {
 	return pattern, groupSizes
 }
 
+func unfoldPattern(pattern string) string {
+	unfolded := pattern
+	for i := 1; i < 5; i++ {
+		unfolded += "?" + pattern
+	}
+	return unfolded
+}
+
+func unfoldGroupSize(groupSizes []int) []int {
+	unfolded := []int{}
+	for i := 0; i < 5; i++ {
+		unfolded = append(unfolded, groupSizes...)
+	}
+	return unfolded
+}
+
 func countLineArrangements(line string) int {
 	linePattern, groupSizes := extractLine(line)
 	expanded := expandPattern(linePattern)
-	regexp := groupPatternToRegex(groupSizes)
 
 	count := 0
 	for _, e := range expanded {
-		if regexp.MatchString(e) {
+		if matchesGroupSizes(e, groupSizes) {
 			count++
 		}
 	}
