@@ -25,6 +25,7 @@ func main() {
 		days.Day9,
 		days.Day10,
 		days.Day11,
+		days.Day12,
 	}
 
 	for day, exercise := range exercises {
