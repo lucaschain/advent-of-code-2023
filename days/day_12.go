@@ -2,81 +2,78 @@ package days
 
 import (
 	"fmt"
-	"math"
-	"math/big"
 	"strings"
 
 	"github.com/lucaschain/advent-of-code/helpers"
 )
 
-func countUnknownSprings(line string) int {
-	count := 0
-	for _, c := range line {
-		if c == '?' {
-			count++
-		}
-	}
-	return count
-}
-
-func fillInPattern(pattern string, base2Pattern string) string {
-	patternCount := 0
-	expanded := ""
+func containsDot(pattern string) bool {
 	for _, c := range pattern {
-		if c == '?' {
-			expanded += string(base2Pattern[patternCount])
-			patternCount++
-		} else {
-			expanded += string(c)
+		if c == '.' {
+			return true
 		}
 	}
-
-	return expanded
+	return false
 }
 
-func expandPattern(pattern string) []string {
-	unknown := countUnknownSprings(pattern)
+var cache = map[string]int{}
 
-	if unknown == 0 {
-		return []string{pattern}
+func countMatches(pattern string, groupSizes []int, patternIndex int, groupIndex, possibilitiesLeft int) int {
+	cacheKey := fmt.Sprintf("%s-%d-%d-%d-%v", pattern, patternIndex, groupIndex, possibilitiesLeft, groupSizes)
+	if _, ok := cache[cacheKey]; ok {
+		return cache[cacheKey]
 	}
-
-	possibilities := math.Pow(2, float64(unknown))
-	expanded := []string{}
-	for i := 0; i < int(possibilities); i++ {
-		base2 := big.NewInt(int64(i)).Text(2)
-		base2 = strings.ReplaceAll(base2, "0", ".")
-		base2 = strings.ReplaceAll(base2, "1", "#")
-
-		for len(base2) < unknown {
-			base2 = "." + base2
+	if groupIndex >= len(groupSizes) {
+		if strings.Contains(pattern[patternIndex-1:], "#") {
+			return 0
 		}
-
-		expanded = append(expanded, fillInPattern(pattern, base2))
+		return 1
 	}
 
-	return expanded
-}
+	solutions := 0
+	unknownCells := len(pattern) - patternIndex - possibilitiesLeft
 
-func matchesGroupSizes(pattern string, groupSizes []int) bool {
-	currentGroup := 0
-	currentGroupIndex := 0
-	for _, c := range pattern {
-		if c != '.' {
-			currentGroup++
+	groupSizesLeft := len(groupSizes) - groupIndex
+	runSize := groupSizesLeft + unknownCells
+	currentGroupSize := groupSizes[groupIndex]
+	for runIndex := 0; runIndex < runSize; runIndex++ {
+		validChars := strings.Repeat(".", runIndex)
+		validChars += strings.Repeat("#", currentGroupSize) + "."
 
-			if currentGroup == 1 {
-				currentGroupIndex++
+		patternPart := pattern[patternIndex:]
+		valid := true
+		for i, validChar := range validChars {
+			if i >= len(patternPart) {
+				break
 			}
-		} else {
-			if currentGroup > 0 {
-				if currentGroup != groupSizes[currentGroupIndex-1] {
-					return false
-				}
+			originalChar := rune(patternPart[i])
+
+			if originalChar == '?' {
+				continue
+			}
+
+			if originalChar != validChar {
+				valid = false
+				break
 			}
 		}
+
+		if !valid {
+			continue
+		}
+
+		solutions += countMatches(
+			pattern,
+			groupSizes,
+			patternIndex+runIndex+currentGroupSize+1,
+			groupIndex+1,
+			possibilitiesLeft-currentGroupSize-1,
+		)
+
 	}
-	return true
+
+	cache[cacheKey] = solutions
+	return solutions
 }
 
 func extractLine(line string) (string, []int) {
@@ -109,16 +106,11 @@ func unfoldGroupSize(groupSizes []int) []int {
 
 func countLineArrangements(line string) int {
 	linePattern, groupSizes := extractLine(line)
-	expanded := expandPattern(linePattern)
 
-	count := 0
-	for _, e := range expanded {
-		if matchesGroupSizes(e, groupSizes) {
-			count++
-		}
-	}
+	linePattern = unfoldPattern(linePattern)
+	groupSizes = unfoldGroupSize(groupSizes)
 
-	return count
+	return countMatches(linePattern, groupSizes, 0, 0, helpers.SliceSum(groupSizes)+len(groupSizes)-1)
 }
 
 func Day12() string {
@@ -126,7 +118,9 @@ func Day12() string {
 
 	arrangementsSum := 0
 	for _, line := range lines {
-		arrangementsSum += countLineArrangements(line)
+		arrangements := countLineArrangements(line)
+		println(arrangements, line)
+		arrangementsSum += arrangements
 	}
 
 	return fmt.Sprintf("Sum of the arrangements: %d", arrangementsSum)

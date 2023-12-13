@@ -39,3 +39,11 @@ func SliceEqual(a, b []int) bool {
 
 	return true
 }
+
+func SliceSum(a []int) int {
+	sum := 0
+	for _, v := range a {
+		sum += v
+	}
+	return sum
+}
